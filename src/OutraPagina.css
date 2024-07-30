@@ -1,0 +1,68 @@
+/* src/OutraPagina.css */
+
+.container {
+    display: flex;
+    height: 100vh;
+  }
+  
+  .lista-contatos {
+    width: 300px; /* Aumentado para acomodar a última mensagem */
+    background-color: #f4f4f4;
+    border-right: 1px solid #ddd;
+    padding: 20px;
+    overflow-y: auto; /* Adiciona rolagem se necessário */
+  }
+  
+  .lista-contatos h2 {
+    margin-top: 0;
+  }
+  
+  .contatos-list {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .contato {
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    transition: background-color 0.3s;
+  }
+  
+  .contato:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .contato.ativo {
+    background-color: #ddd;
+  }
+  
+  .contato-info h3 {
+    margin: 0;
+    font-size: 16px;
+  }
+  
+  .ultima-mensagem {
+    color: #888;
+    font-size: 14px;
+    margin: 5px 0 0;
+  }
+  
+  .chat {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .imagem-aleatoria img {
+    width: 100%; /* Ajusta a largura para preencher o contêiner */
+    height: 80vh; /* Ajusta a altura para 80% da altura da viewport */
+    object-fit: cover; /* Ajusta a imagem para cobrir o contêiner sem distorção */
+  }
+  
+  

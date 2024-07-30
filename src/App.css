@@ -1,0 +1,58 @@
+/* Aplica estilo geral ao corpo da página */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif; /* Define a fonte para o corpo da página */
+  background-color: #f0f0f0; /* Cor de fundo clara para contraste */
+}
+
+/* Estilo para o texto com gradiente de cores */
+.texto-gradiente {
+  font-size: 3rem; /* Ajuste o tamanho da fonte conforme necessário */
+  font-weight: bold; /* Define o peso da fonte para negrito */
+  background: linear-gradient(90deg, #ff6f61, #ffcc00, #00bcd4, #8bc34a); /* Gradiente de cores */
+  -webkit-background-clip: text; /* Aplica o gradiente ao texto no WebKit (Chrome, Safari) */
+  -webkit-text-fill-color: transparent; /* Torna o preenchimento do texto transparente para mostrar o gradiente */
+  background-clip: text; /* Aplica o gradiente ao texto para navegadores que suportam isso */
+  color: transparent; /* Torna o texto transparente para mostrar o gradiente */
+  text-align: center; /* Centraliza o texto */
+  margin: 20px; /* Adiciona margem ao redor do texto */
+}
+
+
+.App {
+  text-align: center;
+  
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  margin-top: 20px;
+}
+
+img {
+  margin-top: 20px;
+  width: 200px;
+  height: 200px;
+}
+
+header {
+  width: 100%; /* Ajusta a largura para preencher o contêiner */
+  height: 80vh; /* Ajusta a altura para 80% da altura da viewport */
+  background-image: url('https://picsum.photos/1920/1080'); /* URL da imagem */
+  background-size: cover; /* Ajusta a imagem para cobrir o contêiner */
+  background-position: center; /* Centraliza a imagem no contêiner */
+  background-repeat: no-repeat; /* Evita que a imagem se repita */
+}

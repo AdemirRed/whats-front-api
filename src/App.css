@@ -19,10 +19,8 @@ body {
   margin: 20px; /* Adiciona margem ao redor do texto */
 }
 
-
 .App {
   text-align: center;
-  
 }
 
 .App-header {
@@ -42,10 +40,11 @@ button {
   margin-top: 20px;
 }
 
-img {
+.qr-code-image {
   margin-top: 20px;
-  width: 200px;
-  height: 200px;
+  width: 300px; /* Ajuste o tamanho da imagem conforme necessário */
+  height: 300px; /* Ajuste o tamanho da imagem conforme necessário */
+  object-fit: contain; /* Garante que a imagem não seja distorcida */
 }
 
 header {

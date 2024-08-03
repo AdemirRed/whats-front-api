@@ -1,4 +1,6 @@
+/* eslint-disable react/prop-types */
 // src/SessionContext.js
+// eslint-disable-next-line no-unused-vars
 import React, { createContext, useState, useContext } from 'react';
 
 const SessionContext = createContext();

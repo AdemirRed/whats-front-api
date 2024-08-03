@@ -1,48 +1,58 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import './OutraPagina.css'; // Certifique-se de que o caminho do arquivo CSS está correto
 
-const EnviarMensagem = ({ sessionId, numeroSelecionado, atualizarMensagens }) => {
+const EnviarMensagem = ({ sessionId, chatId, onMessageSent }) => {
   const [mensagem, setMensagem] = useState('');
-  const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleEnvioMensagem = async () => {
     if (!mensagem.trim()) return;
 
-    setEnviando(true);
-    setErro(null);
+    setLoading(true);
 
     try {
-      await axios.post(`/client/sendMessage/${sessionId}`, {
-        chatId: numeroSelecionado,
-        contentType: 'text',
-        content: mensagem
+      const response = await axios.post(`/client/sendMessage/${sessionId}`, {
+        chatId: chatId,
+        contentType: 'string', // Ajuste conforme necessário para o tipo de conteúdo
+        content: mensagem,
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionId}` // Ajuste conforme necessário para autenticação
+        }
       });
-      setMensagem('');
-      atualizarMensagens(); // Função para atualizar as mensagens após o envio
-    } catch (error) {
-      setErro('Erro ao enviar mensagem. Tente novamente.');
-      console.error('Erro ao enviar mensagem:', error);
+
+      if (response.status === 200) {
+        setMensagem('');
+        setError(null);
+        onMessageSent(); // Callback para atualizar o chat após o envio
+      } else {
+        setError('Erro ao enviar a mensagem');
+      }
+    } catch (err) {
+      setError('Erro ao enviar a mensagem');
     } finally {
-      setEnviando(false);
+      setLoading(false);
     }
   };
 
   return (
     <div className="campo-envio">
       <textarea
+        rows="3"
         value={mensagem}
         onChange={(e) => setMensagem(e.target.value)}
         placeholder="Digite uma mensagem..."
-        rows="3"
       />
       <div className="campo-envio-botoes">
-        <button onClick={handleEnvioMensagem} disabled={enviando}>
-          {enviando ? 'Enviando...' : 'Enviar'}
+        <button onClick={handleEnvioMensagem} disabled={loading || !mensagem.trim()}>
+          {loading ? 'Enviando...' : 'Enviar'}
         </button>
+        <button className="anexar">📎</button>
+        <button className="emoji">😊</button>
       </div>
-      {erro && <p className="error-message">{erro}</p>}
+      {error && <p className="error-message">{error}</p>}
     </div>
   );
 };

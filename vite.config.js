@@ -9,19 +9,19 @@ export default defineConfig({
       '/session': {
         target: 'http://192.168.0.200:200', // URL do backend para sessão
         changeOrigin: true,
-        secure: false, // Define como false se o backend não usar HTTPS
+        secure: false,
         rewrite: (path) => path.replace(/^\/session/, '/session'),
       },
       '/client': {
         target: 'http://192.168.0.200:200', // URL do backend para cliente
         changeOrigin: true,
-        secure: false, // Define como false se o backend não usar HTTPS
+        secure: false,
         rewrite: (path) => path.replace(/^\/client/, '/client'),
       },
       '/chat': {
         target: 'http://redblackspy.ddns.net:200', // URL do backend para chat
         changeOrigin: true,
-        secure: false, // Define como false se o backend não usar HTTPS
+        secure: false,
         rewrite: (path) => path.replace(/^\/chat/, '/chat'),
       },
     },

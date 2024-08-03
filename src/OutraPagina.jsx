@@ -1,10 +1,45 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-// eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect, useRef } from 'react';
 import './OutraPagina.css'; // Arquivo de estilos
 import { fetchContatos, fetchMensagens, fetchNovosChats } from './apii';
-import { isImage, isSticker, isAudio, isUnsupported } from './utils';
 import EnviarMensagem from './enviarMensagem'; // Importar o componente de envio
+
+// Função para formatar a mensagem
+const formatarMensagem = (mensagem) => {
+  // Substituir negrito
+  let formatada = mensagem.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  
+  // Substituir tachado
+  formatada = formatada.replace(/~~(.*?)~~/g, '<del>$1</del>');
+  
+  // Substituir sublinhado
+  formatada = formatada.replace(/__(.*?)__/g, '<u>$1</u>');
+  
+  // Substituir texto em código
+  formatada = formatada.replace(/`(.*?)`/g, '<code>$1</code>');
+  
+  return formatada;
+};
+
+const Mensagem = ({ body, fromMe, media }) => {
+  const mensagemFormatada = formatarMensagem(body);
+
+  return (
+    <div className={`mensagem ${fromMe ? 'minha' : 'do-contato'}`}>
+      {media && media.url ? (
+        media.type === 'image' ? (
+          <img src={media.url} alt="Mídia" className="media" />
+        ) : (
+          <audio controls className="media">
+            <source src={media.url} type={media.type} />
+            Seu navegador não suporta o elemento de áudio.
+          </audio>
+        )
+      ) : null}
+      <div dangerouslySetInnerHTML={{ __html: mensagemFormatada }} />
+    </div>
+  );
+};
+
 
 const OutraPagina = () => {
   const [contatos, setContatos] = useState([]);
@@ -13,7 +48,6 @@ const OutraPagina = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [limit, setLimit] = useState(100); // Limite inicial de mensagens
-  // eslint-disable-next-line no-unused-vars
   const [totalMensagens, setTotalMensagens] = useState(0); // Armazenar a quantidade de mensagens
   const [abaAtiva, setAbaAtiva] = useState('contatos'); // Aba ativa ("contatos" ou "grupos")
   const mensagensContainerRef = useRef(null); // Ref para o contêiner de mensagens
@@ -44,22 +78,22 @@ const OutraPagina = () => {
 
   const fetchMensagensData = async (increaseLimit = false) => {
     if (!contatoSelecionado) return;
-  
+
     const sessionId = localStorage.getItem('sessionId');
     const newLimit = increaseLimit ? limit + 100 : limit;
-  
+
     if (!sessionId) {
       setError('Session ID não encontrado.');
       return;
     }
-  
+
     try {
       const mensagensProcessadas = await fetchMensagens(sessionId, contatoSelecionado.id, newLimit, mensagens.length);
       setLimit(newLimit);
-  
+
       // Atualizar o total de mensagens
       setTotalMensagens(mensagensProcessadas.length);
-  
+
       if (increaseLimit) {
         // Adicionar novas mensagens no início da lista existente
         setMensagens(prevMensagens => {
@@ -77,7 +111,6 @@ const OutraPagina = () => {
       setError(err.message);
     }
   };
-  
 
   useEffect(() => {
     const sessionId = localStorage.getItem('sessionId');
@@ -149,36 +182,36 @@ const OutraPagina = () => {
   return (
     <div className="container">
       <div className="lista-contatos">
-  <div className="header">
-    <h2>{abaAtiva === 'contatos' ? 'Contatos' : 'Grupos'}</h2>
-    <div className="header-actions">
-      <button onClick={() => setAbaAtiva(abaAtiva === 'contatos' ? 'grupos' : 'contatos')}>
-        {abaAtiva === 'contatos' ? 'Grupos' : 'Contatos'}
-      </button>
-      <button>⋮</button> {/* Ícone para configurações */}
-    </div>
-  </div>
-  {loading && <div className="barra-carregamento">Carregando...</div>}
-  {error && <p className="error-message">{error}</p>}
-  {!loading && contatosFiltrados.length > 0 ? (
-    <div className="contatos-list">
-      {contatosFiltrados.map(contato => (
-        <div
-          key={contato.id}
-          className={`contato ${contatoSelecionado?.id === contato.id ? 'ativo' : ''}`}
-          onClick={() => handleContatoClick(contato)}
-        >
-          <div className="contato-info">
-            <h3>{contato.isGroup ? `Grupo: ${contato.name}` : `Contato: ${contato.name}`}</h3>
-            <p>Última Mensagem: {contato.lastMessage}</p>
+        <div className="header">
+          <h2>{abaAtiva === 'contatos' ? 'Contatos' : 'Grupos'}</h2>
+          <div className="header-actions">
+            <button onClick={() => setAbaAtiva(abaAtiva === 'contatos' ? 'grupos' : 'contatos')}>
+              {abaAtiva === 'contatos' ? 'Grupos' : 'Contatos'}
+            </button>
+            <button>⋮</button> {/* Ícone para configurações */}
           </div>
         </div>
-      ))}
-    </div>
-  ) : (
-    !loading && <p>Nenhum contato encontrado.</p>
-  )}
-</div>
+        {loading && <div className="barra-carregamento">Carregando...</div>}
+        {error && <p className="error-message">{error}</p>}
+        {!loading && contatosFiltrados.length > 0 ? (
+          <div className="contatos-list">
+            {contatosFiltrados.map(contato => (
+              <div
+                key={contato.id}
+                className={`contato ${contatoSelecionado?.id === contato.id ? 'ativo' : ''}`}
+                onClick={() => handleContatoClick(contato)}
+              >
+                <div className="contato-info">
+                  <h3>{contato.isGroup ? `Grupo: ${contato.name}` : `Contato: ${contato.name}`}</h3>
+                  <p>Última Mensagem: {contato.lastMessage}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          !loading && <p>Nenhum contato encontrado.</p>
+        )}
+      </div>
 
       <div className="chat">
         {contatoSelecionado ? (
@@ -189,39 +222,7 @@ const OutraPagina = () => {
                 if (!msg || typeof msg !== 'object') return null;
 
                 return (
-                  <div
-                    key={index}
-                    className={`mensagem ${msg.fromMe ? 'minha' : 'do-contato'}`}
-                  >
-                    <div className="mensagem-header">
-                      {msg.fromMe ? 'Você' : contatoSelecionado?.name}
-                    </div>
-                    <div className="mensagem-body">
-                      {msg.type === 'chat' && <p>{msg.body}</p>}
-                      {isImage(msg.media) && (
-                        <img src={msg.media} alt="Imagem" className="mensagem-imagem" />
-                      )}
-                      {isSticker(msg.media) && (
-                        <img src={msg.media} alt="Figurinha" className="mensagem-figurinha" />
-                      )}
-                      {isAudio(msg.media) && (
-                        <audio controls>
-                          <source src={msg.media} type="audio/mpeg" />
-                          Seu navegador não suporta o elemento de áudio.
-                        </audio>
-                      )}
-                      {msg.type === 'poll_creation' && (
-                        <p>Enquete criada: {msg.body}</p>
-                      )}
-                      {msg.type === 'revoked' && <p>Mensagem apagada</p>}
-                      {isUnsupported(msg.type) && (
-                        <p>Mensagem não suportada. Verifique no celular.</p>
-                      )}
-                    </div>
-                    <div className="mensagem-footer">
-                      {new Date(msg.timestamp).toLocaleString()}
-                    </div>
-                  </div>
+                  <Mensagem key={index} body={msg.body} fromMe={msg.fromMe} />
                 );
               })}
             </div>
@@ -246,4 +247,3 @@ const OutraPagina = () => {
 };
 
 export default OutraPagina;
-

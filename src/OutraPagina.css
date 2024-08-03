@@ -1,19 +1,37 @@
 /* src/OutraPagina.css */
+* {
+  padding: 0;
+  box-sizing: border-box;
+  font-family: sans-serif;
+  color: inherit;
+  text-decoration: none;
+  border: 0;
+  background: none;
+  margin: 5px; /* Margem uniforme */
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #000;
+}
 
 .container {
   display: flex;
-  height: 100vh;
+  height: 98vh;
   background-color: #2c2c2c;
   color: #fff;
+  border-radius: 20px;
 }
 
 .lista-contatos {
-  width: 30%;
+  width: 350px;
   border-right: 1px solid #444;
   overflow-y: auto;
   padding: 10px;
   background-color: #2c2c2c;
-  position: relative; /* Adiciona posição relativa para ajuste dos botões */
+  position: relative;
 }
 
 /* Header da lista de contatos */
@@ -69,7 +87,7 @@
 .contatos-list {
   display: flex;
   flex-direction: column;
-  margin-top: 60px; /* Adiciona margem superior para evitar sobreposição do cabeçalho fixo */
+  margin-top: 60px;
 }
 
 .contato {
@@ -80,6 +98,7 @@
 
 .contato.ativo {
   background-color: #444;
+  width: 350px;
 }
 
 .contato-info {
@@ -120,14 +139,6 @@
   align-items: center;
 }
 
-.mensagens-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  margin-top: 60px;
-}
-
 .mensagens {
   flex: 1;
   overflow-y: auto;
@@ -135,9 +146,14 @@
   background-color: #3a3a3a;
   border-radius: 5px;
   display: flex;
-  flex-direction: column-reverse; /* Mensagens mais recentes no topo */
+  flex-direction: column-reverse;
+  background-image: url('https://lh3.googleusercontent.com/pw/AP1GczMoK0bfXJCrR3XCOo8eRecT0ncyPhACCC-w13sT025lbiH09leW36HrltRuBy7H9nJEacjOMIm_7qrPiutenA9ErbFYBMmeOZ3g8wzeBZRtTQKtloihbVMK6G9qYm-Z-NMwqsp5oRVFzcWIunbq0j1FkQ=w1280-h720-s-no-gm?authuser=0');
+  background-size: cover;
+  background-position: top;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
 }
-
 
 .mensagens::-webkit-scrollbar {
   width: 8px;
@@ -152,62 +168,44 @@
   background-color: #2c2c2c;
 }
 
+/* Estilo geral da mensagem */
 .mensagem {
   margin-bottom: 10px;
   padding: 10px;
-  border-radius: 5px;
+  border-radius: 10px;
   max-width: 70%;
-  background-color: #4a4a4a;
-  color: #fff;
   word-wrap: break-word;
+  position: relative;
 }
 
+/* Estilo das mensagens enviadas por mim */
 .mensagem.minha {
-  background-color: #007bff;
+  background-color: #535455;
   color: #fff;
   align-self: flex-end;
-  border-radius: 20px;
+  text-align: start;
+  font-size: 20px;
 }
 
+/* Estilo das mensagens recebidas do contato */
 .mensagem.do-contato {
-  background-color: #4a4a4a;
-  border-radius: 20px;
+  background-color: #e5e5ea;
+  color: #000;
+  align-self: flex-start;
+  text-align: end;
+  font-size: 20px;
 }
 
-.mensagem img {
-  max-width: 100%;
-  border-radius: 5px;
-  margin-top: 5px;
-}
-
-.mensagem-imagem {
-  max-width: 100%;
-  border-radius: 5px;
-}
-
-.mensagem-figurinha {
-  max-width: 100%;
-  border-radius: 5px;
-}
-
-.mensagem audio {
-  margin-top: 5px;
-  border-radius: 5px;
-}
-
-.mensagem-header {
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
+/* Corpo da mensagem dentro da bolha */
 .mensagem-body {
-  margin-bottom: 5px;
-  word-wrap: break-word;
+  background-color: inherit;
+  border-radius: 10px;
 }
 
+/* Rodapé da mensagem com data e hora */
 .mensagem-footer {
-  font-size: 0.8em;
-  color: #bbb;
+  font-size: 0.6em;
+  color: #000000;
   text-align: right;
 }
 
@@ -295,4 +293,23 @@ button:hover {
 .error-message {
   color: red;
   margin: 10px 0;
+}
+
+/* Estilos para HTML formatado */
+strong {
+  font-weight: bold;
+}
+
+del {
+  text-decoration: line-through;
+}
+
+u {
+  text-decoration: underline;
+}
+
+code {
+  background-color: #f4f4f4;
+  padding: 2px 4px;
+  border-radius: 4px;
 }

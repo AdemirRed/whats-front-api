@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -18,8 +18,14 @@ export default defineConfig({
         secure: false, // Define como false se o backend não usar HTTPS
         rewrite: (path) => path.replace(/^\/client/, '/client'),
       },
+      '/chat': {
+        target: 'http://redblackspy.ddns.net:200', // URL do backend para chat
+        changeOrigin: true,
+        secure: false, // Define como false se o backend não usar HTTPS
+        rewrite: (path) => path.replace(/^\/chat/, '/chat'),
+      },
     },
     host: '0.0.0.0', // Usar 0.0.0.0 para permitir acesso de outros dispositivos na rede local
     port: 201, // Porta do servidor de desenvolvimento Vite
   },
-})
+});

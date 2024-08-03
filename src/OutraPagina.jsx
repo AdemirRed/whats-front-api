@@ -1,120 +1,149 @@
-// src/OutraPagina.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './OutraPagina.css'; // Arquivo de estilos
+import { fetchContatos, fetchMensagens } from './apii';
+import { isImage, isSticker, isAudio, isUnsupported } from './utils';
 
 const OutraPagina = () => {
   const [contatos, setContatos] = useState([]);
   const [contatoSelecionado, setContatoSelecionado] = useState(null);
-  const [contatoDetalhes, setContatoDetalhes] = useState(null);
   const [mensagem, setMensagem] = useState('');
   const [mensagens, setMensagens] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [limit, setLimit] = useState(50); // Limite inicial de mensagens
+  const [totalMensagens, setTotalMensagens] = useState(0); // Armazenar a quantidade de mensagens
+  const mensagensContainerRef = useRef(null); // Ref para o contêiner de mensagens
+  const [scrollingToBottom, setScrollingToBottom] = useState(true);
 
   useEffect(() => {
-    const fetchContatos = async () => {
-      const sessionId = localStorage.getItem('sessionId');
+    const sessionId = localStorage.getItem('sessionId');
 
-      if (!sessionId) {
-        setError('Session ID não encontrado.');
-        setLoading(false);
-        return;
-      }
+    if (!sessionId) {
+      setError('Session ID não encontrado.');
+      setLoading(false);
+      return;
+    }
 
+    const fetchData = async () => {
       try {
-        console.log('Iniciando a requisição GET para /client/getChats/');
-        const response = await fetch(`/client/getChats/${sessionId}`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Dados recebidos', data);
-
-          if (data.chats) {
-            const contatosProcessados = data.chats.map(chat => ({
-              id: chat.id._serialized,
-              name: chat.name || 'Sem nome',
-              lastMessage: chat.lastMessage?.body || 'Sem mensagens',
-              isGroup: chat.isGroup || false
-            }));
-            setContatos(contatosProcessados);
-            console.log('Contatos processados', contatosProcessados);
-          } else {
-            throw new Error('O JSON não contém o campo "chats".');
-          }
-        } else {
-          throw new Error('Falha ao obter contatos. Status: ' + response.status);
-        }
+        const contatosProcessados = await fetchContatos(sessionId);
+        setContatos(contatosProcessados);
       } catch (err) {
-        console.error('Erro ao obter contatos:', err.message || 'Erro desconhecido');
-        setError(`Erro ao obter contatos. Mensagem: ${err.message || 'Erro desconhecido'}`);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchContatos();
+    fetchData();
   }, []);
 
+  const fetchMensagensData = async (increaseLimit = false) => {
+    if (!contatoSelecionado) return;
+
+    const sessionId = localStorage.getItem('sessionId');
+    const newLimit = increaseLimit ? limit + 100 : limit;
+
+    if (!sessionId) {
+      setError('Session ID não encontrado.');
+      return;
+    }
+
+    try {
+      const mensagensProcessadas = await fetchMensagens(sessionId, contatoSelecionado.id, newLimit, mensagens.length);
+      setLimit(newLimit);
+      setTotalMensagens(mensagensProcessadas.length); // Atualizar o total de mensagens
+
+      if (increaseLimit) {
+        setMensagens(prevMensagens => [...mensagensProcessadas, ...prevMensagens]);
+      } else {
+        setMensagens(mensagensProcessadas.reverse());
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   useEffect(() => {
-    const fetchContatoDetalhes = async () => {
-      if (!contatoSelecionado) return;
-
-      const sessionId = localStorage.getItem('sessionId');
-
-      if (!sessionId) {
-        setError('Session ID não encontrado.');
-        return;
-      }
-
-      try {
-        console.log(`Iniciando a requisição POST para /client/getChatById/${sessionId}`);
-        const response = await fetch(`/client/getChatById/${sessionId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ chatId: contatoSelecionado.id })
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Detalhes do contato recebidos', data);
-          setContatoDetalhes(data.chat);
-          setMensagens([data.chat.lastMessage]); // Aqui estamos assumindo que a última mensagem é a única para simplicidade
-        } else {
-          throw new Error('Falha ao obter detalhes do contato. Status: ' + response.status);
-        }
-      } catch (err) {
-        console.error('Erro ao obter detalhes do contato:', err.message || 'Erro desconhecido');
-        setError(`Erro ao obter detalhes do contato. Mensagem: ${err.message || 'Erro desconhecido'}`);
-      }
-    };
-
-    fetchContatoDetalhes();
+    if (contatoSelecionado) {
+      fetchMensagensData();
+    }
   }, [contatoSelecionado]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (contatoSelecionado) {
+        fetchMensagensData(); // Verificar novas mensagens a cada 10 segundos
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [contatoSelecionado]);
+
+  useEffect(() => {
+    if (mensagensContainerRef.current) {
+      const container = mensagensContainerRef.current;
+      if (scrollingToBottom) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+  }, [mensagens, scrollingToBottom]);
 
   const handleContatoClick = (contato) => {
     setContatoSelecionado(contato);
+    setMensagens([]);
+    setLimit(50);
+  };
+
+  const sendMessage = async (messageContent) => {
+    const sessionId = localStorage.getItem('sessionId');
+    const chatId = contatoSelecionado?.id;
+
+    if (!sessionId || !chatId) {
+      setError('Session ID ou ID do chat não encontrado.');
+      return;
+    }
+
+    try {
+      await fetch(`/client/sendMessage/${sessionId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chatId,
+          contentType: 'text',
+          content: messageContent,
+        }),
+      });
+    } catch (err) {
+      setError('Erro ao enviar mensagem: ' + err.message);
+    }
   };
 
   const handleEnvioMensagem = async () => {
     if (!mensagem.trim()) return;
 
-    // Simulação de envio de mensagem
-    setMensagens([...mensagens, { body: mensagem, fromMe: true }]);
+    await sendMessage(mensagem);
+
+    const novaMensagem = { body: mensagem, fromMe: true, type: 'chat', timestamp: new Date().toISOString() };
+    setMensagens(prevMensagens => [novaMensagem, ...prevMensagens]);
     setMensagem('');
+    setScrollingToBottom(true);
+  };
+
+  const handleScroll = () => {
+    const container = mensagensContainerRef.current;
+    const atBottom = container.scrollHeight - container.scrollTop === container.clientHeight;
+    setScrollingToBottom(atBottom);
   };
 
   return (
     <div className="container">
       <div className="lista-contatos">
         <h2>Contatos</h2>
-        {loading && (
-          <div className="barra-carregamento">
-            {/* A barra de carregamento é visível enquanto `loading` é verdadeiro */}
-          </div>
-        )}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {loading && <div className="barra-carregamento">Carregando...</div>}
+        {error && <p className="error-message">{error}</p>}
         {!loading && contatos.length > 0 ? (
           <div className="contatos-list">
             {contatos.map(contato => (
@@ -124,9 +153,8 @@ const OutraPagina = () => {
                 onClick={() => handleContatoClick(contato)}
               >
                 <div className="contato-info">
-                  <h3>{contato.isGroup ? `Nome do Grupo: ${contato.name}` : `Nome do Contato: ${contato.name}`}</h3>
+                  <h3>{contato.isGroup ? `Grupo: ${contato.name}` : `Contato: ${contato.name}`}</h3>
                   <p>Última Mensagem: {contato.lastMessage}</p>
-                  <p>ID Serializado: {contato.id}</p>
                 </div>
               </div>
             ))}
@@ -139,24 +167,58 @@ const OutraPagina = () => {
         {contatoSelecionado ? (
           <div className="chat-container">
             <h2 className="chat-header">{contatoSelecionado.name || 'Desconhecido'}</h2>
-            <div className="mensagens">
+            <div className="mensagens" ref={mensagensContainerRef} onScroll={handleScroll}>
               {mensagens.map((msg, index) => (
                 <div
                   key={index}
                   className={`mensagem ${msg.fromMe ? 'minha' : 'do-contato'}`}
                 >
-                  {msg.body}
+                  <div className="mensagem-header">
+                    {msg.fromMe ? 'Você' : contatoSelecionado?.name}
+                  </div>
+                  <div className="mensagem-body">
+                    {msg.type === 'chat' && <p>{msg.body}</p>}
+                    {isImage(msg.media) && (
+                      <img src={msg.media} alt="Imagem" className="mensagem-imagem" />
+                    )}
+                    {isSticker(msg.media) && (
+                      <img src={msg.media} alt="Figurinha" className="mensagem-figurinha" />
+                    )}
+                    {isAudio(msg.media) && (
+                      <audio controls>
+                        <source src={msg.media} type="audio/mpeg" />
+                        Seu navegador não suporta o elemento de áudio.
+                      </audio>
+                    )}
+                    {msg.type === 'poll_creation' && (
+                      <p>Enquete criada: {msg.body}</p>
+                    )}
+                    {msg.type === 'revoked' && <p>Mensagem apagada</p>}
+                    {isUnsupported(msg.type) && (
+                      <p>Mensagem não suportada. Verifique no celular.</p>
+                    )}
+                  </div>
+                  <div className="mensagem-footer">
+                    {new Date(msg.timestamp).toLocaleString()}
+                  </div>
                 </div>
               ))}
             </div>
+            {mensagens.length >= limit && (
+              <button onClick={() => fetchMensagensData(true)}>Carregar mais mensagens</button>
+            )}
             <div className="campo-envio">
-              <input
-                type="text"
+              <textarea
+                rows="3"
                 value={mensagem}
                 onChange={(e) => setMensagem(e.target.value)}
                 placeholder="Digite uma mensagem..."
               />
-              <button onClick={handleEnvioMensagem}>Enviar</button>
+              <div className="campo-envio-botoes">
+                <button onClick={handleEnvioMensagem} disabled={!mensagem.trim()}>Enviar</button>
+                <button className="anexar">📎</button>
+                <button className="emoji">😊</button>
+              </div>
             </div>
           </div>
         ) : (

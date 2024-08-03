@@ -313,3 +313,34 @@ code {
   padding: 2px 4px;
   border-radius: 4px;
 }
+
+/* Estilo para mídias (imagens, stickers, etc.) */
+.mensagem-midia {
+  position: relative;
+  display: inline-block;
+}
+
+.mensagem-midia img, .mensagem-midia video {
+  max-width: 100%;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.mensagem-midia a {
+  text-decoration: none;
+}
+
+.mensagem-midia a.download {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  background-color: #007bff;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 0.8em;
+}
+
+.mensagem-midia a.download:hover {
+  background-color: #0056b3;
+}

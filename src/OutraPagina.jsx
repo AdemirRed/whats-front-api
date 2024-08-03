@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './OutraPagina.css'; // Arquivo de estilos
-import { fetchContatos, fetchMensagens, fetchNovosChats } from './apii';
+import { fetchContatos, fetchMensagens, fetchNovosChats, downloadMedia } from './apii';
 import EnviarMensagem from './enviarMensagem'; // Importar o componente de envio
 
 // Função para formatar a mensagem
@@ -25,16 +25,14 @@ const Mensagem = ({ body, fromMe, media }) => {
 
   return (
     <div className={`mensagem ${fromMe ? 'minha' : 'do-contato'}`}>
-      {media && media.url ? (
-        media.type === 'image' ? (
-          <img src={media.url} alt="Mídia" className="media" />
-        ) : (
-          <audio controls className="media">
-            <source src={media.url} type={media.type} />
-            Seu navegador não suporta o elemento de áudio.
-          </audio>
-        )
-      ) : null}
+      {media && media.url && (
+        <div className="mensagem-media">
+          <span className="media-label">
+            {media.type === 'image' ? 'Imagem:' : 'Sticker:'}
+          </span>
+          <img src={media.url} alt={media.type === 'image' ? 'Imagem' : 'Sticker'} className="media" />
+        </div>
+      )}
       <div dangerouslySetInnerHTML={{ __html: mensagemFormatada }} />
     </div>
   );
@@ -47,15 +45,14 @@ const OutraPagina = () => {
   const [mensagens, setMensagens] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [limit, setLimit] = useState(100); // Limite inicial de mensagens
-  const [totalMensagens, setTotalMensagens] = useState(0); // Armazenar a quantidade de mensagens
-  const [abaAtiva, setAbaAtiva] = useState('contatos'); // Aba ativa ("contatos" ou "grupos")
-  const mensagensContainerRef = useRef(null); // Ref para o contêiner de mensagens
+  const [limit, setLimit] = useState(100);
+  const [totalMensagens, setTotalMensagens] = useState(0);
+  const [abaAtiva, setAbaAtiva] = useState('contatos');
+  const mensagensContainerRef = useRef(null);
   const [scrollingToBottom, setScrollingToBottom] = useState(true);
 
   useEffect(() => {
     const sessionId = localStorage.getItem('sessionId');
-
     if (!sessionId) {
       setError('Session ID não encontrado.');
       setLoading(false);
@@ -78,34 +75,45 @@ const OutraPagina = () => {
 
   const fetchMensagensData = async (increaseLimit = false) => {
     if (!contatoSelecionado) return;
-
+  
     const sessionId = localStorage.getItem('sessionId');
     const newLimit = increaseLimit ? limit + 100 : limit;
-
+  
     if (!sessionId) {
       setError('Session ID não encontrado.');
       return;
     }
-
+  
     try {
       const mensagensProcessadas = await fetchMensagens(sessionId, contatoSelecionado.id, newLimit, mensagens.length);
       setLimit(newLimit);
-
+  
       // Atualizar o total de mensagens
       setTotalMensagens(mensagensProcessadas.length);
-
+  
+      // Fazer o download da mídia para as mensagens que possuem mídia
+      const mensagensComMidia = await Promise.all(
+        mensagensProcessadas.map(async (mensagem) => {
+          if (mensagem.hasMedia) {
+            const media = await downloadMedia(sessionId, contatoSelecionado.id, mensagem.id);
+            return { ...mensagem, media };
+          }
+          return mensagem;
+        })
+      );
+  
       if (increaseLimit) {
         // Adicionar novas mensagens no início da lista existente
         setMensagens(prevMensagens => {
           // Evitar duplicação de mensagens
-          const novasMensagens = mensagensProcessadas.filter(mensagem => 
+          const novasMensagens = mensagensComMidia.filter(mensagem => 
             !prevMensagens.some(prevMensagem => prevMensagem.id === mensagem.id)
           );
           return [...novasMensagens, ...prevMensagens];
         });
       } else {
         // Atualizar com novas mensagens apenas
-        setMensagens(mensagensProcessadas.reverse());
+        setMensagens(mensagensComMidia.reverse());
       }
     } catch (err) {
       setError(err.message);
@@ -114,7 +122,6 @@ const OutraPagina = () => {
 
   useEffect(() => {
     const sessionId = localStorage.getItem('sessionId');
-
     if (!sessionId) return;
 
     const fetchChats = async () => {
@@ -126,8 +133,7 @@ const OutraPagina = () => {
       }
     };
 
-    const chatCheckInterval = setInterval(fetchChats, 10000); // Verificar novos chats a cada 10 segundos
-
+    const chatCheckInterval = setInterval(fetchChats, 10000);
     return () => clearInterval(chatCheckInterval);
   }, []);
 
@@ -135,13 +141,12 @@ const OutraPagina = () => {
     if (contatoSelecionado) {
       fetchMensagensData();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contatoSelecionado]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (contatoSelecionado) {
-        fetchMensagensData(); // Verificar novas mensagens a cada 10 segundos
+        fetchMensagensData();
       }
     }, 10000);
 
@@ -165,7 +170,7 @@ const OutraPagina = () => {
 
   const handleMessageSent = (novaMensagem) => {
     setMensagens(prevMensagens => [novaMensagem, ...prevMensagens]);
-    fetchMensagensData(); // Atualizar o chat após o envio da mensagem
+    fetchMensagensData();
   };
 
   const handleScroll = () => {
@@ -174,7 +179,6 @@ const OutraPagina = () => {
     setScrollingToBottom(atBottom);
   };
 
-  // Filtrar contatos baseados na aba ativa
   const contatosFiltrados = contatos.filter(contato =>
     abaAtiva === 'contatos' ? !contato.isGroup : contato.isGroup
   );
@@ -188,7 +192,7 @@ const OutraPagina = () => {
             <button onClick={() => setAbaAtiva(abaAtiva === 'contatos' ? 'grupos' : 'contatos')}>
               {abaAtiva === 'contatos' ? 'Grupos' : 'Contatos'}
             </button>
-            <button>⋮</button> {/* Ícone para configurações */}
+            <button>⋮</button> 
           </div>
         </div>
         {loading && <div className="barra-carregamento">Carregando...</div>}
@@ -222,7 +226,7 @@ const OutraPagina = () => {
                 if (!msg || typeof msg !== 'object') return null;
 
                 return (
-                  <Mensagem key={index} body={msg.body} fromMe={msg.fromMe} />
+                  <Mensagem key={index} body={msg.body} fromMe={msg.fromMe} media={msg.media} />
                 );
               })}
             </div>

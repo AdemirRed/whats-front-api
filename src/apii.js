@@ -1,3 +1,5 @@
+// apii.js
+
 // Função para formatar a mensagem
 const formatarMensagem = (mensagem) => {
   if (!mensagem) return '';
@@ -17,7 +19,41 @@ const formatarMensagem = (mensagem) => {
   return mensagem;
 };
 
+export const downloadMedia = async (sessionId, chatId, messageId) => {
+  try {
+    const response = await fetch(`/message/downloadMedia/${sessionId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ chatId, messageId }),
+    });
 
+    const result = await response.json();
+
+    if (result.success) {
+      const { mimetype, data } = result.messageMedia;
+      let mediaUrl = '';
+
+      // Converter dados base64 para uma URL
+      if (data) {
+        mediaUrl = `data:${mimetype};base64,${data}`;
+      }
+
+      return { url: mediaUrl, type: mimetype.includes('image') ? 'image' : 'sticker' };
+    } else {
+      throw new Error('Falha ao baixar mídia');
+    }
+  } catch (error) {
+    console.error('Erro ao baixar mídia:', error);
+    return { url: '', type: '' };
+  }
+};
+
+
+
+
+// Função para buscar contatos
 export const fetchContatos = async (sessionId) => {
   try {
     const response = await fetch(`/client/getChats/${sessionId}`);
@@ -38,6 +74,33 @@ export const fetchContatos = async (sessionId) => {
   }
 };
 
+// Função para buscar novos chats
+export const fetchNovosChats = async (sessionId) => {
+  try {
+    const timestamp = new Date().getTime(); // Adiciona um timestamp único
+    const response = await fetch(`/client/getChats/${sessionId}?_=${timestamp}`);
+    if (!response.ok) {
+      throw new Error('Erro ao buscar novos chats');
+    }
+    const data = await response.json();
+    console.log('Dados de novos chats:', data);
+    if (Array.isArray(data.chats)) {
+      return data.chats.map(chat => ({
+        id: chat.id._serialized,
+        name: chat.name || 'Sem nome',
+        lastMessage: chat.lastMessage?.body || 'Sem mensagens',
+        isGroup: chat.isGroup || false
+      }));
+    } else {
+      throw new Error('O JSON não contém um array "chats".');
+    }
+  } catch (error) {
+    console.error('Erro ao buscar novos chats:', error);
+    throw new Error(`Erro ao buscar novos chats: ${error.message}`);
+  }
+};
+
+// Função para buscar mensagens
 export const fetchMensagens = async (sessionId, chatId, limit, offset) => {
   try {
     const response = await fetch(`/chat/fetchMessages/${sessionId}`, {
@@ -67,10 +130,7 @@ export const fetchMensagens = async (sessionId, chatId, limit, offset) => {
           let media = null;
           if (msg.directPath || msg.deprecatedMms3Url) {
             media = { url: msg.directPath || msg.deprecatedMms3Url, type: 'media' };
-          }
-
-          // Baixar mídia se necessário
-          if (msg.mediaUrl) {
+          } else if (msg.mediaUrl) {
             const mediaData = await downloadMedia(sessionId, msg.chatId, msg.messageId);
             media = { url: mediaData.url, type: mediaData.type };
           }
@@ -93,61 +153,5 @@ export const fetchMensagens = async (sessionId, chatId, limit, offset) => {
     }
   } catch (err) {
     throw new Error(`Erro ao obter mensagens do chat. Mensagem: ${err.message || 'Erro desconhecido'}`);
-  }
-};
-
-export const fetchNovosChats = async (sessionId) => {
-  try {
-    const timestamp = new Date().getTime(); // Adiciona um timestamp único
-    const response = await fetch(`/client/getChats/${sessionId}?_=${timestamp}`);
-    if (!response.ok) {
-      throw new Error('Erro ao buscar novos chats');
-    }
-    const data = await response.json();
-    console.log('Dados de novos chats:', data);
-    if (Array.isArray(data.chats)) {
-      return data.chats.map(chat => ({
-        id: chat.id._serialized,
-        name: chat.name || 'Sem nome',
-        lastMessage: chat.lastMessage?.body || 'Sem mensagens',
-        isGroup: chat.isGroup || false
-      }));
-    } else {
-      throw new Error('O JSON não contém um array "chats".');
-    }
-  } catch (error) {
-    console.error('Erro ao buscar novos chats:', error);
-    throw new Error(`Erro ao buscar novos chats: ${error.message}`);
-  }
-};
-
-const downloadMedia = async (sessionId, chatId, messageId) => {
-  try {
-    const response = await fetch(`/message/downloadMedia/${sessionId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ chatId, messageId }),
-    });
-
-    const result = await response.json();
-    
-    if (result.success) {
-      const { mimetype, data } = result.messageMedia;
-      let mediaUrl = '';
-
-      // Converter dados base64 para uma URL
-      if (data) {
-        mediaUrl = `data:${mimetype};base64,${data}`;
-      }
-
-      return { url: mediaUrl, type: mimetype.includes('image') ? 'image' : 'stikers' };
-    } else {
-      throw new Error('Falha ao baixar mídia');
-    }
-  } catch (error) {
-    console.error('Erro ao baixar mídia:', error);
-    return { url: '', type: '' };
   }
 };
